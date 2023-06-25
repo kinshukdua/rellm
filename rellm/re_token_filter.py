@@ -12,21 +12,41 @@ class ReTokenFilter:
 
     @staticmethod
     def build_decoded_tokens_cache(tokenizer: PreTrainedTokenizer) -> Dict[int, str]:
-        return {token_id: tokenizer.decode(token_id) for _, token_id in tokenizer.get_vocab().items()}
+        return {
+            token_id: tokenizer.decode(token_id)
+            for _, token_id in tokenizer.get_vocab().items()
+        }
 
-    def is_valid_token(self, token_id: int, partial_completion: str, patterns: List[regex.Pattern]) -> bool:
+    def is_valid_token(
+        self, token_id: int, partial_completion: str, patterns: List[regex.Pattern]
+    ) -> bool:
         decoded_token = self.decoded_tokens_cache[token_id]
-        return any(pattern.fullmatch(partial_completion + decoded_token, partial=True) for pattern in patterns)
 
-    def filter_tokens(self, partial_completion: str, patterns: Union[regex.Pattern, List[regex.Pattern]]) -> Set[int]:
+        # If the model is generating this token, it's likely trying to end the sequence or use some
+        # other special token.
+        # We only want to allow this token to generate if the regex is already matched.
+        partial = decoded_token != ""
+
+        return any(
+            pattern.fullmatch(partial_completion + decoded_token, partial=partial)
+            for pattern in patterns
+        )
+
+    def filter_tokens(
+        self,
+        partial_completion: str,
+        patterns: Union[regex.Pattern, List[regex.Pattern]],
+    ) -> Set[int]:
         if isinstance(patterns, regex.Pattern):
             patterns = [patterns]
 
         with ThreadPoolExecutor():
             valid_token_ids = set(
                 filter(
-                    lambda token_id: self.is_valid_token(token_id, partial_completion, patterns),
-                    self.decoded_tokens_cache.keys()
+                    lambda token_id: self.is_valid_token(
+                        token_id, partial_completion, patterns
+                    ),
+                    self.decoded_tokens_cache.keys(),
                 )
             )
 
