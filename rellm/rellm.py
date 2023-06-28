@@ -1,6 +1,6 @@
 from typing import List
 
-import re as regex
+import regex
 from transformers import PreTrainedModel, PreTrainedTokenizer
 
 from rellm.logits_mask import LogitsMask
