@@ -15,6 +15,6 @@ class LogitsMask(LogitsProcessor):
         device = scores.device
         # scores = scores.cpu()
         mask = torch.ones_like(scores) * -1e10
-        mask[:, self.allowed_token_ids] = 0
+        mask[:, :, self.allowed_token_ids] = 0
         scores = scores + mask 
         return scores.to(device)
