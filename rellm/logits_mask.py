@@ -13,8 +13,8 @@ class LogitsMask(LogitsProcessor):
 
     def __call__(self, input_ids, scores):
         device = scores.device
-        scores = scores.cpu()
-        mask = np.ones_like(scores) * -1e10
+        # scores = scores.cpu()
+        mask = torch.ones_like(scores) * -1e10
         mask[:, self.allowed_token_ids] = 0
         scores = scores + mask 
         return scores.to(device)
